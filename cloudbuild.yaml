@@ -1,0 +1,76 @@
+---
+# Google Cloud Build Configuration
+# This file defines the build steps for the Jupyter notebook project
+
+steps:
+  # Step 1: Install Python dependencies
+  - name: 'python:3.10'
+    id: 'install-dependencies'
+    entrypoint: 'pip'
+    args:
+      - 'install'
+      - '--user'
+      - 'jupyter'
+      - 'nbconvert'
+      - 'nbformat'
+      - 'ipython'
+
+  # Step 2: Validate notebook format
+  - name: 'python:3.10'
+    id: 'validate-notebooks'
+    entrypoint: 'python'
+    args:
+      - '-m'
+      - 'nbformat.validator'
+      - '*.ipynb'
+    waitFor: ['install-dependencies']
+
+  # Step 3: Convert notebooks to HTML for archival (optional)
+  - name: 'python:3.10'
+    id: 'convert-notebooks'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        pip install --user jupyter nbconvert
+        for notebook in *.ipynb; do
+          echo "Converting $notebook to HTML..."
+          python -m jupyter nbconvert --to html "$notebook" \
+            || echo "Failed to convert $notebook"
+        done
+    waitFor: ['validate-notebooks']
+
+  # Step 4: Create artifact directory
+  - name: 'gcr.io/cloud-builders/gsutil'
+    id: 'archive-artifacts'
+    args:
+      - 'cp'
+      - '-r'
+      - '*.html'
+      - 'gs://${_BUCKET_NAME}/builds/${BUILD_ID}/'
+    waitFor: ['convert-notebooks']
+    # This step will fail if _BUCKET_NAME is not set, but won't block the build
+
+# Timeout for the entire build (default is 10 minutes)
+timeout: '1200s'
+
+# Options for the build
+options:
+  # Machine type for the build
+  machineType: 'N1_HIGHCPU_8'
+
+  # Logging options
+  logging: CLOUD_LOGGING_ONLY
+
+  # Log streaming option
+  logStreamingOption: STREAM_ON
+
+# Substitution variables (can be overridden at build time)
+substitutions:
+  _BUCKET_NAME: 'your-bucket-name'
+
+# Artifacts to store (optional)
+artifacts:
+  objects:
+    location: 'gs://${_BUCKET_NAME}/builds/${BUILD_ID}'
+    paths: ['*.html', '*.ipynb']
