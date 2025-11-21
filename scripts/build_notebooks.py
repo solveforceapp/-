@@ -36,8 +36,9 @@ def main():
     results = []
     for nb in notebooks:
         print(f"Processing {nb}...")
-        # Determine output HTML path
-        html_name = os.path.basename(nb).replace('.ipynb', '.html')
+        # Determine output HTML path, preserving directory structure
+        # Replace path separators with underscores to avoid conflicts
+        html_name = nb.replace('/', '_').replace('.ipynb', '.html')
         html_path = os.path.join(output_dir, html_name)
         
         try:
