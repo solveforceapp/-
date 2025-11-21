@@ -1,0 +1,8 @@
+# Core Jupyter dependencies
+jupyter>=1.0.0
+nbconvert>=7.0.0
+nbformat>=5.0.0
+
+# Testing and linting
+pytest>=7.0.0
+flake8>=6.0.0
