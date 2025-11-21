@@ -1,0 +1,19 @@
+[flake8]
+# Ignore Jupyter notebook files
+exclude = 
+    .git,
+    __pycache__,
+    .ipynb_checkpoints,
+    *.ipynb,
+    build,
+    dist,
+    site,
+    gh-pages
+
+# Maximum line length
+max-line-length = 100
+
+# Ignore specific error codes if needed
+# E501: line too long (handled by max-line-length)
+# W503: line break before binary operator (not a real issue)
+ignore = W503

@@ -1,0 +1,90 @@
+on:
+  push:
+    branches:
+      - '**'
+
+name: Build and deploy notebooks to GitHub Pages (per-branch)
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # needed to push gh-pages
+    steps:
+      - name: Checkout repository (current branch)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine branch name
+        id: branch
+        run: |
+          echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" > $GITHUB_ENV
+          echo "branch=${GITHUB_REF#refs/heads/}" > $GITHUB_OUTPUT
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; else pip install jupyter nbconvert nbformat; fi
+
+      - name: Build notebooks to HTML for this branch
+        run: |
+          mkdir -p site/${{ env.BRANCH_NAME }}
+          python scripts/build_notebooks.py site/${{ env.BRANCH_NAME }}
+
+      - name: Prepare gh-pages branch workspace
+        run: |
+          # If gh-pages exists, clone it, otherwise init an empty gh-pages branch
+          REPO_URL="https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          if git ls-remote --exit-code origin gh-pages; then
+            git clone --depth 1 --branch gh-pages "$REPO_URL" gh-pages || git clone --single-branch --branch gh-pages "$REPO_URL" gh-pages
+          else
+            # create temporary folder, init gh-pages and push
+            mkdir gh-pages
+            cd gh-pages
+            git init
+            git remote add origin "$REPO_URL"
+            git checkout -b gh-pages || true
+            touch .nojekyll
+            git add .nojekyll
+            git commit -m "Initialize gh-pages"
+            git push origin gh-pages
+            cd ..
+            git clone --depth 1 --branch gh-pages "$REPO_URL" gh-pages
+          fi
+
+      - name: Copy built site into gh-pages under branch folder
+        run: |
+          set -e
+          rsync -a --delete site/${{ env.BRANCH_NAME }}/ gh-pages/${{ env.BRANCH_NAME }}/
+          # ensure a top-level index exists listing branches (optional)
+          python3 - <<'PY'
+import os, json
+root='gh-pages'
+items = sorted([d for d in os.listdir(root) if os.path.isdir(os.path.join(root,d))])
+index_path = os.path.join(root, 'index.html')
+with open(index_path, 'w') as f:
+    f.write("<html><head><title>Published Branches</title></head><body>")
+    f.write("<h1>Published branches</h1><ul>")
+    for d in items:
+        f.write(f'<li><a href="{d}/">{d}</a></li>')
+    f.write("</ul></body></html>")
+PY
+
+      - name: Commit and push changes to gh-pages
+        working-directory: gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          if git diff --quiet --cached; then
+            echo "No changes to deploy"
+          else
+            git commit -m "Deploy notebooks for branch '${{ env.BRANCH_NAME }}' [ci skip]"
+            git push origin gh-pages
+          fi
