@@ -2,9 +2,6 @@
 Basic tests for the notebook build script.
 """
 import os
-import sys
-import tempfile
-import shutil
 from pathlib import Path
 
 
@@ -19,7 +16,7 @@ def test_requirements_file_exists():
     """Verify requirements.txt exists."""
     req_path = Path(__file__).parent.parent / "requirements.txt"
     assert req_path.exists(), "requirements.txt should exist"
-    
+
     # Check that it contains expected packages
     content = req_path.read_text()
     assert "jupyter" in content
