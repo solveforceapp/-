@@ -1,0 +1,5 @@
+jupyter
+nbconvert
+nbformat
+pytest
+flake8
