@@ -36,7 +36,7 @@ def main():
     timeout = 600
     if "--timeout" in sys.argv:
         try:
-            timeout = int(sys.argv[sys.argv.index("--timeout")+1])
+            timeout = int(sys.argv[sys.argv.index("--timeout") + 1])
         except Exception:
             pass
     outdir.mkdir(parents=True, exist_ok=True)
@@ -60,7 +60,7 @@ def main():
                 sys.executable, "-m", "jupyter", "nbconvert",
                 "--to", "html",
                 "--execute",
-                "--ExecutePreprocessor.timeout={}".format(timeout),
+                f"--ExecutePreprocessor.timeout={timeout}",
                 "--output-dir", str(target_dir),
                 str(nb)
             ])
