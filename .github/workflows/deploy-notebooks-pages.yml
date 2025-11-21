@@ -34,7 +34,6 @@ jobs:
 
       - name: Build notebooks to HTML for this branch
         run: |
-          python -m pip install --upgrade pip
           mkdir -p site/${{ env.BRANCH_NAME }}
           python scripts/build_notebooks.py site/${{ env.BRANCH_NAME }}
 
@@ -43,7 +42,7 @@ jobs:
           # If gh-pages exists, clone it, otherwise init an empty gh-pages branch
           REPO_URL="https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
           if git ls-remote --exit-code origin gh-pages; then
-            git clone --depth 1 --branch gh-pages "$REPO_URL" gh-pages || git clone "$REPO_URL" gh-pages
+            git clone --depth 1 --branch gh-pages "$REPO_URL" gh-pages || git clone --single-branch --branch gh-pages "$REPO_URL" gh-pages
           else
             # create temporary folder, init gh-pages and push
             mkdir gh-pages

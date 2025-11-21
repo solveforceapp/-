@@ -13,6 +13,7 @@ import sys
 import os
 import glob
 import subprocess
+import html
 
 
 def main():
@@ -60,7 +61,7 @@ def main():
                 output_dir, os.path.basename(nb).replace('.ipynb', '.html'))
             with open(error_html, 'w') as f:
                 error_msg = f"<html><body><h1>Execution failed for {nb}</h1>"
-                error_msg += f"<pre>{e}</pre></body></html>"
+                error_msg += f"<pre>{html.escape(str(e))}</pre></body></html>"
                 f.write(error_msg)
             html_files.append(os.path.basename(error_html))
 
