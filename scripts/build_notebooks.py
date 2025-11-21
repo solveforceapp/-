@@ -48,7 +48,11 @@ def main():
 
     print(f"Found {len(notebooks)} notebooks. Exporting to {outdir} ...")
     for nb in notebooks:
-        rel = nb.relative_to(Path.cwd())
+        # Handle both absolute and relative paths
+        if nb.is_absolute():
+            rel = nb.relative_to(Path.cwd())
+        else:
+            rel = nb
         target_dir = outdir.joinpath(rel.parent)
         target_dir.mkdir(parents=True, exist_ok=True)
         print(f"Processing {nb} -> {target_dir}")
