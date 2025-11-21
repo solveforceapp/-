@@ -1,0 +1,7 @@
+.env
+.venv
+__pycache__/
+site/
+gh-pages/
+*.pyc
+.ipynb_checkpoints/
