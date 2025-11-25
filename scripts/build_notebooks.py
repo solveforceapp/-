@@ -19,13 +19,11 @@ from pathlib import Path
 By default this will search for all .ipynb files (excluding
 .ipynb_checkpoints) and:
 - execute them with a timeout
-- export resulting notebook to HTML and place the HTML in <output_dir>
-  preserving folder structure
+- export resulting notebook to HTML and place the HTML in <output_dir> preserving folder structure
 """
 import sys
 import subprocess
 from pathlib import Path
-
 
 def find_notebooks(root="."):
     nbs = []
@@ -34,10 +32,10 @@ def find_notebooks(root="."):
         if ".ipynb_checkpoints" in p.parts or "site" in p.parts or "gh-pages" in p.parts:
         if (".ipynb_checkpoints" in p.parts or "site" in p.parts or
                 "gh-pages" in p.parts):
+        if (".ipynb_checkpoints" in p.parts or "site" in p.parts or "gh-pages" in p.parts):
             continue
         nbs.append(p)
     return nbs
-
 
 def main():
     if len(sys.argv) < 2:
@@ -62,16 +60,14 @@ def main():
     for nb in notebooks:
         rel = nb.relative_to(Path.cwd())
         # Handle both absolute and relative paths
-        if nb.is_absolute():
+        try:
             rel = nb.relative_to(Path.cwd())
-        else:
+        except Exception:
             rel = nb
         target_dir = outdir.joinpath(rel.parent)
         target_dir.mkdir(parents=True, exist_ok=True)
         print(f"Processing {nb} -> {target_dir}")
 
-        # Execute notebook in place into a temp file and convert to HTML
-        # Use nbconvert CLI to execute and export; capture exit code
         try:
             subprocess.check_call([
                 sys.executable, "-m", "jupyter", "nbconvert",
