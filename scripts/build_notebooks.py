@@ -1,11 +1,23 @@
 #!/usr/bin/env python3
 """
 Execute all notebooks in the repository (recursive) and export them to HTML into an output folder.
+Execute all notebooks in the repository (recursive) and export them to
+HTML into an output folder.
 
 Usage:
   python scripts/build_notebooks.py <output_dir> [--timeout SECONDS]
 
 By default this will search for all .ipynb files (excluding .ipynb_checkpoints) and:
+- execute them with a timeout
+- export resulting notebook to HTML and place the HTML in <output_dir> preserving folder structure
+"""
+import sys
+import os
+import subprocess
+from pathlib import Path
+
+By default this will search for all .ipynb files (excluding
+.ipynb_checkpoints) and:
 - execute them with a timeout
 - export resulting notebook to HTML and place the HTML in <output_dir> preserving folder structure
 """
@@ -17,6 +29,9 @@ def find_notebooks(root="."):
     nbs = []
     for p in Path(root).rglob("*.ipynb"):
         # skip checkpoints and files inside .git or site output
+        if ".ipynb_checkpoints" in p.parts or "site" in p.parts or "gh-pages" in p.parts:
+        if (".ipynb_checkpoints" in p.parts or "site" in p.parts or
+                "gh-pages" in p.parts):
         if (".ipynb_checkpoints" in p.parts or "site" in p.parts or "gh-pages" in p.parts):
             continue
         nbs.append(p)
@@ -30,6 +45,7 @@ def main():
     timeout = 600
     if "--timeout" in sys.argv:
         try:
+            timeout = int(sys.argv[sys.argv.index("--timeout")+1])
             timeout = int(sys.argv[sys.argv.index("--timeout") + 1])
         except Exception:
             pass
@@ -42,6 +58,7 @@ def main():
 
     print(f"Found {len(notebooks)} notebooks. Exporting to {outdir} ...")
     for nb in notebooks:
+        rel = nb.relative_to(Path.cwd())
         # Handle both absolute and relative paths
         try:
             rel = nb.relative_to(Path.cwd())
@@ -56,12 +73,21 @@ def main():
                 sys.executable, "-m", "jupyter", "nbconvert",
                 "--to", "html",
                 "--execute",
+                "--ExecutePreprocessor.timeout={}".format(timeout),
                 f"--ExecutePreprocessor.timeout={timeout}",
                 "--output-dir", str(target_dir),
                 str(nb)
             ])
         except subprocess.CalledProcessError as e:
             print(f"ERROR executing {nb}: {e}")
+            # Create a placeholder HTML with the failure message so CI pages report which notebooks failed
+            fail_html = target_dir.joinpath(nb.stem + ".html")
+            with open(fail_html, "w", encoding="utf-8") as fh:
+                fh.write(f"<html><body><h1>Execution failed for {nb}</h1><pre>{e}</pre></body></html>")
+    print("Done.")
+
+            # Create a placeholder HTML with the failure message so
+            # CI pages report which notebooks failed
             fail_html = target_dir.joinpath(nb.stem + ".html")
             with open(fail_html, "w", encoding="utf-8") as fh:
                 error_msg = (
